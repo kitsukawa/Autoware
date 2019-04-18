@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
         nmea_msgs
         gnss
         tf
+        rosbag
         )
 
 catkin_package()
@@ -34,7 +35,15 @@ target_include_directories(nmea2tfpose PRIVATE nodes/nmea2tfpose ${catkin_INCLUD
 target_link_libraries(nmea2tfpose ${catkin_LIBRARIES})
 add_dependencies(nmea2tfpose ${catkin_EXPORTED_TARGETS})
 
-install(TARGETS nmea2tfpose fix2tfpose
+add_executable(nmea2tfpose_offline
+        nodes/nmea2tfpose_offline/nmea2tfpose_core.cpp
+        nodes/nmea2tfpose_offline/nmea2tfpose_node.cpp
+        )
+target_include_directories(nmea2tfpose_offline PRIVATE nodes/nmea2tfpose_offline ${catkin_INCLUDE_DIRS})
+target_link_libraries(nmea2tfpose_offline ${catkin_LIBRARIES})
+add_dependencies(nmea2tfpose_offline ${catkin_EXPORTED_TARGETS})
+
+install(TARGETS nmea2tfpose fix2tfpose nmea2tfpose_offline
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
