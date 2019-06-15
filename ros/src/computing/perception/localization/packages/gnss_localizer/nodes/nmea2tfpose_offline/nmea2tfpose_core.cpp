@@ -62,7 +62,21 @@ void Nmea2TFPoseNode::run()
   std::string filename = directory_name + "/" + std::string(buffer) + ".csv";
   boost::filesystem::create_directories(boost::filesystem::path(directory_name));
   ofs.open(filename.c_str(), std::ios::app);
-  ofs << "input->headers" << ","
+  ofs << "msg->header.stamp" << ","
+      << "x_" << ","
+      << "y_" << ","
+      << "z_" << ","
+      << "roll_" << ","
+      << "pitch_" << ","
+      << "yaw_" << ","
+      << "quality_" << ","
+      << "num_satellite_" << ","
+      << "lat" << ","
+      << "lon" << ","
+      << "alt" << ","
+      << "lat2" << ","
+      << "lon2" << ","
+      << "alt2"
       << std::endl;
 
   rosbag::Bag bag;
@@ -144,18 +158,51 @@ void Nmea2TFPoseNode::convert(std::vector<std::string> nmea, ros::Time current_s
       position_time_ = stod(nmea.at(1));
       double lat = stod(nmea.at(2));
       double lon = stod(nmea.at(4));
-      double h = stod(nmea.at(9));
+
+      double lat1, lad1, lod1, lon1;
+      // 1234.56 -> 12'34.56 -> 12+ 34.56/60
+      lad1 = floor(lat / 100.);
+      lat1 = lat - lad1 * 100.;
+      lod1 = floor(lon / 100.);
+      lon1 = lon - lod1 * 100.;
+
+      // Changing Longitude and Latitude to Radians
+      lat_ = (lad1 + lat1 / 60.0);
+      lon_ = (lod1 + lon1 / 60.0);
+
+      double h = alt_ = stod(nmea.at(9));
       quality_ = stoi(nmea.at(6));
       num_satellite_ = stoi(nmea.at(7));
       geo_.set_llh_nmea_degrees(lat, lon, h);
       ROS_INFO("GGA is subscribed.");
+
+      map_tools::MgrsConverter converter;
+      double lat2, lon2, alt2;
+      converter.jpxy2latlon(y_, x_, z_, 7, lat2, lon2, alt2);
+
+      ofs << current_stamp << ","
+          << std::fixed << std::setprecision(5) << x_ << ","
+          << std::fixed << std::setprecision(5) << y_ << ","
+          << std::fixed << std::setprecision(5) << z_ << ","
+          << roll_ << ","
+          << pitch_ << ","
+          << yaw_ << ","
+          << quality_ << ","
+          << num_satellite_ << ","
+          << std::setprecision(std::numeric_limits<double>::max_digits10) << lat_ << ","
+          << std::setprecision(std::numeric_limits<double>::max_digits10) << lon_ << ","
+          << alt_ << ","
+          << std::setprecision(std::numeric_limits<double>::max_digits10) << lat2 << ","
+          << std::setprecision(std::numeric_limits<double>::max_digits10) << lon2 << ","
+          << alt2
+          << std::endl;
     }
     else if(nmea.at(0) == "$GPRMC")
     {
       position_time_ = stoi(nmea.at(1));
-      double lat = stod(nmea.at(3));
-      double lon = stod(nmea.at(5));
-      double h = 0.0;
+      double lat = lat_ =  stod(nmea.at(3));
+      double lon = lon_ = stod(nmea.at(5));
+      double h = alt_ = 0.0;
       geo_.set_llh_nmea_degrees(lat, lon, h);
       ROS_INFO("GPRMC is subscribed.");
     }
@@ -191,17 +238,6 @@ void Nmea2TFPoseNode::callbackFromNmeaSentence(const nmea_msgs::Sentence::ConstP
   {
     publishPoseStamped();
     publishTF();
-    ofs << msg->header.seq << ","
-        << msg->header.stamp << ","
-        << std::fixed << std::setprecision(5) << x_ << ","
-        << std::fixed << std::setprecision(5) << y_ << ","
-        << std::fixed << std::setprecision(5) << z_ << ","
-        << roll_ << ","
-        << pitch_ << ","
-        << yaw_ << ","
-        << quality_ << ","
-        << num_satellite_
-        << std::endl;
 
     return;
   }

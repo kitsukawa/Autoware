@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(gnss_localizer)
 
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+find_package(PROJ REQUIRED)
 
 find_package(autoware_build_flags REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
@@ -10,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
         gnss
         tf
         rosbag
+        pcl_ros
         )
 
 catkin_package()
@@ -18,6 +22,7 @@ SET(CMAKE_CXX_FLAGS "-O2 -g -Wall ${CMAKE_CXX_FLAGS}")
 
 include_directories(
         ${catkin_INCLUDE_DIRS}
+        ${PROJ_INCLUDE_DIR}
 )
 
 add_executable(fix2tfpose
@@ -38,9 +43,10 @@ add_dependencies(nmea2tfpose ${catkin_EXPORTED_TARGETS})
 add_executable(nmea2tfpose_offline
         nodes/nmea2tfpose_offline/nmea2tfpose_core.cpp
         nodes/nmea2tfpose_offline/nmea2tfpose_node.cpp
+        ../lidar_localizer/nodes/coordinate_transformer/mgrs_converter.cpp
         )
 target_include_directories(nmea2tfpose_offline PRIVATE nodes/nmea2tfpose_offline ${catkin_INCLUDE_DIRS})
-target_link_libraries(nmea2tfpose_offline ${catkin_LIBRARIES})
+target_link_libraries(nmea2tfpose_offline ${catkin_LIBRARIES}  ${PROJ_LIBRARIES})
 add_dependencies(nmea2tfpose_offline ${catkin_EXPORTED_TARGETS})
 
 install(TARGETS nmea2tfpose fix2tfpose nmea2tfpose_offline

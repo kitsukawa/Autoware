@@ -13,21 +13,22 @@
   <arg name="use_local_transform" default="false" />
   <arg name="sync" default="false" />
   <arg name="output_log_data" default="true" />
-  <arg name="map_path" default="/media/kitsukawa/Map/moriyama/map/pointcloud_map/" />
-  <arg name="rosbag" default="/media/kitsukawa/work/journal/moriyama/rosbag/moriyama_2015-03-24_01.bag" />
+  <arg name="map_path" default="/media/kitsukawa/map4_1/mms_odaiba/pcd/for_ndt_filtered_0.2/" />
+  <arg name="rosbag" default="/media/kitsukawa/map4_1/20181218_tokyo/20181219/rosbag/run4_points_70-360.bag" />
   <!-- ndt parameters -->
-  <arg name="resolution" default="3.0" />
+  <arg name="resolution" default="1.0" />
   <arg name="step_size" default="0.1" />
   <arg name="trans_epsilon" default="0.01" />
   <arg name="max_iterations" default="30" />
   <arg name="voxel_grid_size" default="2.0" />
   <!-- initial pose-->
-  <arg name="init_x" default="-14771.3" />
-  <arg name="init_y" default="-84778.3" />
-  <arg name="init_z" default="45.77" />
-  <arg name="init_roll" default="0.0" />
-  <arg name="init_pitch" default="0.0" />
-  <arg name="init_yaw" default="-2.28" />
+  <arg name="init_x" default="-4185.11" />
+  <arg name="init_y" default="-41125.1" />
+  <arg name="init_z" default="6.36" />
+  <arg name="init_roll" default="-0.02" />
+  <arg name="init_pitch" default="-0.01" />
+  <arg name="init_yaw" default="2.26" />
+  <arg name="plane" default="9" />
 
   <node pkg="lidar_localizer" type="ndt_matching_offline" name="ndt_matching_offline" output="screen">
     <param name="method_type" value="$(arg method_type)" />
@@ -56,6 +57,8 @@
     <param name="init_roll" value="$(arg init_roll)" />
     <param name="init_pitch" value="$(arg init_pitch)" />
     <param name="init_yaw" value="$(arg init_yaw)" />
+    <param name="plane" value="$(arg plane)" />
+
     <remap from="/points_raw" to="/sync_drivers/points_raw" if="$(arg sync)" />
   </node>
 

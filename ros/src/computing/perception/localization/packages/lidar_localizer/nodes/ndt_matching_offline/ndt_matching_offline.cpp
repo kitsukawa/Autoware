@@ -80,6 +80,8 @@
 
 #define PREDICT_POSE_THRESHOLD 0.5
 
+#include "../coordinate_transformer/mgrs_converter.hpp"
+
 #define Wa 0.4
 #define Wb 0.3
 #define Wc 0.3
@@ -139,6 +141,8 @@ static int max_iter = 30;        // Maximum iterations
 static float ndt_res = 1.0;      // Resolution
 static double step_size = 0.1;   // Step size
 static double trans_eps = 0.01;  // Transformation epsilon
+
+static int _plane = 7;
 
 static ros::Publisher predict_pose_pub;
 static geometry_msgs::PoseStamped predict_pose_msg;
@@ -1601,6 +1605,10 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
                            Wc * ((2.0 - trans_probability) / 2.0) * 100.0;
     ndt_reliability_pub.publish(ndt_reliability);
 
+    map_tools::MgrsConverter converter;
+    double lat, lon, alt;
+    converter.jpxy2latlon(current_pose.y, current_pose.x, current_pose.z, _plane, lat, lon, alt);
+
     // Write log
     if(_output_log_data)
     {
@@ -1617,21 +1625,21 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
             << std::fixed << std::setprecision(5) << current_pose.x << ","
             << std::fixed << std::setprecision(5) << current_pose.y << ","
             << std::fixed << std::setprecision(5) << current_pose.z << ","
-            << current_pose.roll << ","
-            << current_pose.pitch << ","
-            << current_pose.yaw << ","
-            << predict_pose.x << ","
-            << predict_pose.y << ","
-            << predict_pose.z << ","
-            << predict_pose.roll << ","
-            << predict_pose.pitch << ","
-            << predict_pose.yaw << ","
-            << current_pose.x - predict_pose.x << ","
-            << current_pose.y - predict_pose.y << ","
-            << current_pose.z - predict_pose.z << ","
-            << current_pose.roll - predict_pose.roll << ","
-            << current_pose.pitch - predict_pose.pitch << ","
-            << current_pose.yaw - predict_pose.yaw << ","
+            << std::fixed << std::setprecision(5) << current_pose.roll << ","
+            << std::fixed << std::setprecision(5) << current_pose.pitch << ","
+            << std::fixed << std::setprecision(5) << current_pose.yaw << ","
+            << std::fixed << std::setprecision(5) << predict_pose.x << ","
+            << std::fixed << std::setprecision(5) << predict_pose.y << ","
+            << std::fixed << std::setprecision(5) << predict_pose.z << ","
+            << std::fixed << std::setprecision(5) << predict_pose.roll << ","
+            << std::fixed << std::setprecision(5) << predict_pose.pitch << ","
+            << std::fixed << std::setprecision(5) << predict_pose.yaw << ","
+            << std::fixed << std::setprecision(5) << current_pose.x - predict_pose.x << ","
+            << std::fixed << std::setprecision(5) << current_pose.y - predict_pose.y << ","
+            << std::fixed << std::setprecision(5) << current_pose.z - predict_pose.z << ","
+            << std::fixed << std::setprecision(5) << current_pose.roll - predict_pose.roll << ","
+            << std::fixed << std::setprecision(5) << current_pose.pitch - predict_pose.pitch << ","
+            << std::fixed << std::setprecision(5) << current_pose.yaw - predict_pose.yaw << ","
             << predict_pose_error << ","
             << iteration << ","
             << fitness_score << ","
@@ -1644,7 +1652,10 @@ static void points_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
             << time_ndt_matching.data << ","
             << voxel_grid_time << ","
             << align_time << ","
-            << getFitnessScore_time
+            << getFitnessScore_time << ","
+            << std::setprecision(std::numeric_limits<double>::max_digits10) << lat << ","
+            << std::setprecision(std::numeric_limits<double>::max_digits10) << lon << ","
+            << alt
             << std::endl;
       }
     }
@@ -1754,7 +1765,7 @@ int main(int argc, char** argv)
     std::time_t now = std::time(NULL);
     std::tm* pnow = std::localtime(&now);
     std::strftime(buffer, 80, "%Y%m%d_%H%M%S", pnow);
-    std::string directory_name = "/tmp/Autoware/log/ndt_matching";
+    std::string directory_name = "/tmp/Autoware/log/ndt_matching_offline";
     filename = directory_name + "/" + std::string(buffer) + ".csv";
     filename_config = directory_name + "/" + std::string(buffer) + "_config.txt";
     boost::filesystem::create_directories(boost::filesystem::path(directory_name));
@@ -1793,7 +1804,10 @@ int main(int argc, char** argv)
         << "time_ndt_matching.data" << ","
         << "voxel_grid_time" << ","
         << "align_time" << ","
-        << "getFitnessScore_time"
+        << "getFitnessScore_time" << ","
+        << "lat" << ","
+        << "lon" << ","
+        << "alt" << ","
         << std::endl;
 
   }
@@ -1827,6 +1841,8 @@ int main(int argc, char** argv)
   private_nh.getParam("init_pitch", initial_pose.pitch);
   private_nh.getParam("init_yaw", initial_pose.yaw);
 
+  private_nh.getParam("plane", _plane);
+
   ofs_config.open(filename_config.c_str(), std::ios::app);
   ofs_config << "method_type: " << (int)_method_type << std::endl
              << "use_gnss: " << _use_gnss << std::endl
@@ -1849,7 +1865,8 @@ int main(int argc, char** argv)
              << "init_z: " << initial_pose.z << std::endl
              << "init_roll: " << initial_pose.roll << std::endl
              << "init_pitch: " << initial_pose.pitch << std::endl
-             << "init_yaw: " << initial_pose.yaw << std::endl;
+             << "init_yaw: " << initial_pose.yaw << std::endl
+             << "plane: " << _plane << std::endl;
 
   // Setting position and posture for the first time.
   localizer_pose.x = initial_pose.x;

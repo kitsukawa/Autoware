@@ -38,6 +38,8 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
+#include "../../../lidar_localizer/nodes/coordinate_transformer/mgrs_converter.hpp"
+
 namespace gnss_localizer
 {
 class Nmea2TFPoseNode
@@ -76,6 +78,8 @@ private:
   int quality_, num_satellite_;
   std::ofstream ofs;
   std::string rosbag_;
+
+  double lat_, lon_, alt_;
 
   // callbacks
   void callbackFromNmeaSentence(const nmea_msgs::Sentence::ConstPtr &msg);

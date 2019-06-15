@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(lidar_localizer)
 
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 find_package(PCL REQUIRED)
+find_package(PROJ REQUIRED)
 
 IF (NOT (PCL_VERSION VERSION_LESS "1.7.2"))
     SET(PCL_OPENMP_PACKAGES pcl_omp_registration)
@@ -70,16 +73,28 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS}
  ${autoware_config_msgs_INCLUDE_DIRS}
- ${autoware_msgs_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+ ${autoware_msgs_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${PROJ_INCLUDE_DIR})
 
 SET(CMAKE_CXX_FLAGS "-O2 -g -Wall ${CMAKE_CXX_FLAGS}")
+
+add_executable(coordinate_test nodes/coordinate_transformer/coordinate_test.cpp nodes/coordinate_transformer/mgrs_converter.cpp)
+target_link_libraries(coordinate_test ${catkin_LIBRARIES} ${PROJ_LIBRARIES})
+add_dependencies(coordinate_test ${catkin_EXPORTED_TARGETS})
+
+add_executable(pcd_latlon2mgrs nodes/coordinate_transformer/pcd_latlon2mgrs.cpp nodes/coordinate_transformer/mgrs_converter.cpp)
+target_link_libraries(pcd_latlon2mgrs ${catkin_LIBRARIES} ${PROJ_LIBRARIES})
+add_dependencies(pcd_latlon2mgrs ${catkin_EXPORTED_TARGETS})
+
+add_executable(pcd_jpxy2mgrs nodes/coordinate_transformer/pcd_jpxy2mgrs.cpp nodes/coordinate_transformer/mgrs_converter.cpp)
+target_link_libraries(pcd_jpxy2mgrs ${catkin_LIBRARIES} ${PROJ_LIBRARIES})
+add_dependencies(pcd_jpxy2mgrs ${catkin_EXPORTED_TARGETS})
 
 add_executable(ndt_matching nodes/ndt_matching/ndt_matching.cpp)
 target_link_libraries(ndt_matching ${catkin_LIBRARIES})
 add_dependencies(ndt_matching ${catkin_EXPORTED_TARGETS})
 
-add_executable(ndt_matching_offline nodes/ndt_matching_offline/ndt_matching_offline.cpp)
-target_link_libraries(ndt_matching_offline ${catkin_LIBRARIES})
+add_executable(ndt_matching_offline nodes/ndt_matching_offline/ndt_matching_offline.cpp nodes/coordinate_transformer/mgrs_converter.cpp)
+target_link_libraries(ndt_matching_offline ${catkin_LIBRARIES}  ${PROJ_LIBRARIES})
 add_dependencies(ndt_matching_offline ${catkin_EXPORTED_TARGETS})
 
 add_executable(ndt_mapping nodes/ndt_mapping/ndt_mapping.cpp)
@@ -154,6 +169,9 @@ install(TARGETS
             ndt_matching_monitor
             icp_matching
             queue_counter
+            coordinate_test
+            pcd_latlon2mgrs
+            pcd_jpxy2mgrs
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

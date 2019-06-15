@@ -2,7 +2,7 @@
 <launch>
 
   <arg name="plane" default="7"/>
-  <arg name="rosbag" default="/media/kitsukawa/work/journal/moriyama/rosbag/moriyama_2015-03-24_01.bag" />
+  <arg name="rosbag" default="/media/kitsukawa/map4_1/moriyama/rosbag/moriyama_2015-03-24_01.bag" />
 
   <node pkg="gnss_localizer" type="nmea2tfpose_offline" name="nmea2tfpose_offline" output="screen">
     <param name="plane" value="$(arg plane)"/>
